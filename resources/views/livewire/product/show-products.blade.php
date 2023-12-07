@@ -18,7 +18,7 @@
                     <td class="border border-gray-300 px-4 py-2">{{ $product->product_id }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ $product->name }}</td>
                     <td class="border border-gray-300 px-4 py-2">{{ $product->description }}</td>
-                    <td class="border border-gray-300 px-4 py-2">{{ number_format($product->price, 2)}}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ Number::currency($product->price, in: 'USD')}}</td>
                     <!-- Add more table cells with product data -->
                 </tr>
                 @endforeach

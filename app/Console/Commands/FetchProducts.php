@@ -4,7 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Product;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\Exists;
 
 class FetchProducts extends Command
 {
@@ -27,25 +30,34 @@ class FetchProducts extends Command
      */
     public function handle()
     {
-        $max = Product::max('product_id');
-        $response = Http::get(config('sources.product.base_url')."products?limit=10&skip={$max}"); // Adjust the API URL and limit here   
-        if ($response->successful()) {
-            $products = $response->json();
-            foreach ($products['products'] as $productData) {
-                Product::updateOrCreate(
-                    [
-                        'product_id' => $productData['id']
-                    ],
-                    [
-                    'name' => $productData['title'],
-                    'description' => $productData['description'],
-                    'price' => $productData['price']
-                ]);
+        try {
+            $max = Product::max('product_id');
+            $response = Http::get(config('sources.product.base_url') . "products?limit=10&skip={$max}"); // Adjust the API URL and limit here   
+            if ($response->successful()) {
+                $products = $response->json();
+                if (Arr::get($products,'products')) {
+                    foreach ($products['products'] as $productData) {
+                        Product::updateOrCreate(
+                            [
+                                'product_id' => $productData['id']
+                            ],
+                            [
+                                'name' => $productData['title'],
+                                'description' => $productData['description'],
+                                'price' => $productData['price']
+                            ]
+                        );
+                    }
+                    $this->info('Products fetched and stored successfully.');
+                } else {
+                    Log::info('Products not found please check your data.');
+                    $this->info('Array key does not exists');
+                }
+            } else {
+                $this->error('Failed to fetch products.');
             }
-
-            $this->info('Products fetched and stored successfully.');
-        } else {
-            $this->error('Failed to fetch products.');
+        } catch (\Exception $e) {
+            Log::info($e->getMessage());
         }
     }
 }
